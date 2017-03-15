@@ -1,0 +1,6 @@
+#!/bin/bash
+
+rm -f ciphertext*
+rm -f plaintext*_*
+rm -f key20
+rm -f key70000

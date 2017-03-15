@@ -80,7 +80,7 @@ int createMessage(char * message, size_t length, char *argv[]) {
 
 	}
 	/* Create the message composed of the two strings */
-	returnVal = snprintf(message, length, "enc$$%s$$%s##", buff1 , buff2);
+	returnVal = snprintf(message, length, "dec$$%s$$%s##", buff1 , buff2);
 
 	printf("Message for server is: %s\n", message);
 	/* SnPrintf was unsuccessful, return failure */	

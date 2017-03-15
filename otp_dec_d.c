@@ -12,24 +12,24 @@
 
 void error(const char *msg) { perror(msg); exit(1); } // Error function used for reporting issues
 
-void getCipherText(char * text, char * key, char * cipher) {
+void decode(char * cipher, char * key, char * text) {
 	int i;
 	//char cipher[strlen(text)];
 	int textChar, keyChar, cipherChar;
 
 	//memset(cipher,'\0', sizeof(cipher)); 
 
-	printf("size of text: %d\n", strlen(text));
+	printf("size of cipher: %d\n", strlen(cipher));
 
-	/* Iterate through text to cipher */
-	for (i=0; i < strlen(text); i++) {
+	/* Iterate through cipher */
+	for (i=0; i < strlen(cipher); i++) {
 
 		/* First, convert ascii A-Z and space to 0 through 27 */
-		if (text[i] == ' ') {
-			textChar = 0;
+		if (cipher[i] == ' ') {
+			cipherChar = 0;
 		}
 		else {
-			textChar = text[i] - 64;
+			cipherChar = cipher[i] - 64;
 		}
 	
 		if (key[i] == ' ') {
@@ -39,21 +39,21 @@ void getCipherText(char * text, char * key, char * cipher) {
 			keyChar = key[i] - 64;
 		}
 
-		/* Addition: textChar + keyChar */
-		cipherChar = textChar + keyChar;
+		/* Subtraction: textChar + keyChar */
+		textChar = cipherChar - keyChar;
 
 		/* Ensure new cipher Char is between 0 and 27 */
-		if (cipherChar >= 27) { cipherChar -= 27; }
+		if (textChar < 0) { textChar += 27; }
 
 		
 		printf("textChar: %d keyChar: %d newChar: %d\n", textChar, keyChar, cipherChar);
 
 		/* Undo conversion of ascii */
-		if (cipherChar == 0) {
-			cipher[i] = ' ';
+		if (textChar == 0) {
+			text[i] = ' ';
 		}
 		else {
-			cipher[i] = cipherChar + 64;
+			text[i] = textChar + 64;
 		}		
 	}
 
@@ -67,7 +67,7 @@ void childMethod(int connectionFD) {
 	char text[100000];
 	char key[100000];
 	char cipher[100000];
-	char * type = "enc";
+	char * type = "dec";
 	char * token;
 	pid_t spawnPid = -5;
 
@@ -100,11 +100,11 @@ void childMethod(int connectionFD) {
 	completeMessage[terminalLoc] = '\0';
 	printf("SERVER: I received this from the client: \"%s\"\n", completeMessage);
 
-	/* Verify that client is otp_enc */
+	/* Verify that client is otp_dec */
 	if (strncmp(completeMessage, type, strlen(temp)) != 0) {
-		fprintf(stderr,"ERROR: Client type must be encoder\n");
+		fprintf(stderr,"ERROR: Client type must be decoder\n");
 		
-		charsRead = send(connectionFD, "Error: Client type must be encoder",34,0 );
+		charsRead = send(connectionFD, "Error: Client type must be decoder",34,0 );
 		
 		if (charsRead < 0) error("ERROR writing to socket\n");
 
@@ -115,19 +115,19 @@ void childMethod(int connectionFD) {
 	memset(temp, '\0', sizeof(temp));
 	strcpy(temp, completeMessage);
 
-	/* Clear contents of key and text strings */
+	/* Clear contents of key and cipher strings */
 	memset(key, '\0', sizeof(key));
-	memset(text, '\0', sizeof(text));
+	memset(cipher, '\0', sizeof(cipher));
 
-	/* Remove "enc" text */
+	/* Remove "dec" text */
 	token = strtok(temp, "$$");
 
-	/* Remove plaintext text */
+	/* Remove cipher text */
 	token = strtok(NULL, "$$");
 
-	/* Save plaintext text */
-	strcpy(text, token);
-	printf("plaintext in server: \"%s\"\n", text);
+	/* Save cipher text */
+	strcpy(cipher, token);
+	printf("cipher in server: \"%s\"\n", cipher);
 
 	/* Remove key text */
 	token = strtok(NULL, "$$");
@@ -136,12 +136,12 @@ void childMethod(int connectionFD) {
 	strcpy(key, token);
 	printf("key text in server: \"%s\"\n", key);
 
-	/* Pass key and text to cipher function and return cipher */
-	memset(cipher, '\0', sizeof(cipher));
+	/* Pass key and cipher to text function and return decoded message */
+	memset(text, '\0', sizeof(text));
 
-	getCipherText(text, key, cipher);
+	decode(cipher, key, text);
 
-	printf("cipher text in server: \"%s\"\n", cipher);
+	printf("decoded text in server: \"%s\"\n", text);
 
 	/* while (token != NULL) {
 		printf(" token: %s", token);
