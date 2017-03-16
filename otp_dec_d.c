@@ -19,7 +19,7 @@ void decode(char * cipher, char * key, char * text) {
 
 	//memset(cipher,'\0', sizeof(cipher)); 
 
-	printf("size of cipher: %d\n", strlen(cipher));
+//	printf("size of cipher: %d\n", strlen(cipher));
 
 	/* Iterate through cipher */
 	for (i=0; i < strlen(cipher); i++) {
@@ -46,7 +46,7 @@ void decode(char * cipher, char * key, char * text) {
 		if (textChar < 0) { textChar += 27; }
 
 		
-		printf("textChar: %d keyChar: %d newChar: %d\n", textChar, keyChar, cipherChar);
+//		printf("textChar: %d keyChar: %d newChar: %d\n", textChar, keyChar, cipherChar);
 
 		/* Undo conversion of ascii */
 		if (textChar == 0) {
@@ -85,20 +85,20 @@ void childMethod(int connectionFD) {
 
 	/* Keep reading until all data is received */
 	while (strstr(completeMessage, "##") == NULL) {
-		printf("still null\n");
+//		printf("still null\n");
 		memset(readBuffer, '\0', sizeof(readBuffer)); // Clear read buffer
 		charsRead = recv(connectionFD, readBuffer, sizeof(readBuffer) - 1, 0);
 		strcat(completeMessage, readBuffer);
-		printf("PARENT: Message received: \"%s\"\n", readBuffer);
+//		printf("PARENT: Message received: \"%s\"\n", readBuffer);
 	//	if (charsRead == -1) { printf("r == -1\n"); break;}
 	//	if (charsRead == 0) { printf("r == 0\n"); break; }
 	}
 
-	printf("out of while loop\n");
+//	printf("out of while loop\n");
 
 	int terminalLoc = strstr(completeMessage, "##") - completeMessage;
 	completeMessage[terminalLoc] = '\0';
-	printf("SERVER: I received this from the client: \"%s\"\n", completeMessage);
+//	printf("SERVER: I received this from the client: \"%s\"\n", completeMessage);
 
 	/* Verify that client is otp_dec */
 	if (strncmp(completeMessage, type, strlen(temp)) != 0) {
@@ -127,21 +127,21 @@ void childMethod(int connectionFD) {
 
 	/* Save cipher text */
 	strcpy(cipher, token);
-	printf("cipher in server: \"%s\"\n", cipher);
+//	printf("cipher in server: \"%s\"\n", cipher);
 
 	/* Remove key text */
 	token = strtok(NULL, "$$");
 	
 	/* Save key text */
 	strcpy(key, token);
-	printf("key text in server: \"%s\"\n", key);
+//	printf("key text in server: \"%s\"\n", key);
 
 	/* Pass key and cipher to text function and return decoded message */
 	memset(text, '\0', sizeof(text));
 
 	decode(cipher, key, text);
 
-	printf("decoded text in server: \"%s\"\n", text);
+//	printf("decoded text in server: \"%s\"\n", text);
 
 	/* while (token != NULL) {
 		printf(" token: %s", token);
@@ -149,19 +149,19 @@ void childMethod(int connectionFD) {
 	}*/
 	
 
-	printf("SERVER: temp is: \"%s\"\n", temp);
+//	printf("SERVER: temp is: \"%s\"\n", temp);
 
 
 	// Send a Success message back to the client
-	charsRead = send(connectionFD, "I am the server, and I got your message", 39, 0); // Send success back
+	charsRead = send(connectionFD, text, strlen(text), 0); // Send success back
 	if (charsRead < 0) error("ERROR writing to socket\n");
 
 	}
 
-	printf("Closing fd\n");
+//	printf("Closing fd\n");
 	close(connectionFD); 
 
-	printf("Exiting child process\n");
+//	printf("Exiting child process\n");
 	exit(0);
 	}
 }

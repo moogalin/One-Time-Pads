@@ -82,7 +82,7 @@ int createMessage(char * message, size_t length, char *argv[]) {
 	/* Create the message composed of the two strings */
 	returnVal = snprintf(message, length, "enc$$%s$$%s##", buff1 , buff2);
 
-	printf("Message for server is: %s\n", message);
+//	printf("Message for server is: %s\n", message);
 	/* SnPrintf was unsuccessful, return failure */	
 	if (returnVal < 0) {return 1;}
 
@@ -125,7 +125,7 @@ int main(int argc, char *argv[])
 
 	/* Validate that plaintext length > keylength */
 	if (validSize(argv[1], argv[2])) {
-		printf("validated\n");
+//		printf("validated\n");
 	}
 	else {
 		fprintf(stderr, "Error: Key file may not be shorter than text file\n");
@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
 	charsWritten = send(socketFD, buffer, strlen(buffer), 0); // Write to the server
 	if (charsWritten < 0) error("CLIENT: ERROR writing to socket");
 
-	printf("charsWritten: %d strelen(buffer): %d\n", charsWritten, strlen(buffer));
+//	printf("charsWritten: %d strelen(buffer): %d\n", charsWritten, strlen(buffer));
 	if (charsWritten < strlen(buffer)) printf("CLIENT: WARNING: Not all data written to socket!\n");
 
 	/* Get return message from server */
@@ -171,7 +171,7 @@ int main(int argc, char *argv[])
 	if (charsRead < 0) error("CLIENT: ERROR reading from socket");
 
 	/* Print message from server */
-	printf("CLIENT: I received this from the server: \"%s\"\n", buffer);
+	printf("%s\n", buffer);
 
 	close(socketFD);
 

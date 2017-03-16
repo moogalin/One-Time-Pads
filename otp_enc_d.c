@@ -12,14 +12,14 @@
 
 void error(const char *msg) { perror(msg); exit(1); } // Error function used for reporting issues
 
-void getCipherText(char * text, char * key, char * cipher) {
+void encode(char * text, char * key, char * cipher) {
 	int i;
 	//char cipher[strlen(text)];
 	int textChar, keyChar, cipherChar;
 
 	//memset(cipher,'\0', sizeof(cipher)); 
 
-	printf("size of text: %d\n", strlen(text));
+//	printf("size of text: %d\n", strlen(text));
 
 	/* Iterate through text to cipher */
 	for (i=0; i < strlen(text); i++) {
@@ -46,7 +46,7 @@ void getCipherText(char * text, char * key, char * cipher) {
 		if (cipherChar >= 27) { cipherChar -= 27; }
 
 		
-		printf("textChar: %d keyChar: %d newChar: %d\n", textChar, keyChar, cipherChar);
+//		printf("textChar: %d keyChar: %d newChar: %d\n", textChar, keyChar, cipherChar);
 
 		/* Undo conversion of ascii */
 		if (cipherChar == 0) {
@@ -85,20 +85,20 @@ void childMethod(int connectionFD) {
 
 	/* Keep reading until all data is received */
 	while (strstr(completeMessage, "##") == NULL) {
-		printf("still null\n");
+//		printf("still null\n");
 		memset(readBuffer, '\0', sizeof(readBuffer)); // Clear read buffer
 		charsRead = recv(connectionFD, readBuffer, sizeof(readBuffer) - 1, 0);
 		strcat(completeMessage, readBuffer);
-		printf("PARENT: Message received: \"%s\"\n", readBuffer);
+//		printf("PARENT: Message received: \"%s\"\n", readBuffer);
 	//	if (charsRead == -1) { printf("r == -1\n"); break;}
 	//	if (charsRead == 0) { printf("r == 0\n"); break; }
 	}
 
-	printf("out of while loop\n");
+//	printf("out of while loop\n");
 
 	int terminalLoc = strstr(completeMessage, "##") - completeMessage;
 	completeMessage[terminalLoc] = '\0';
-	printf("SERVER: I received this from the client: \"%s\"\n", completeMessage);
+//	printf("SERVER: I received this from the client: \"%s\"\n", completeMessage);
 
 	/* Verify that client is otp_enc */
 	if (strncmp(completeMessage, type, strlen(temp)) != 0) {
@@ -127,21 +127,21 @@ void childMethod(int connectionFD) {
 
 	/* Save plaintext text */
 	strcpy(text, token);
-	printf("plaintext in server: \"%s\"\n", text);
+//	printf("plaintext in server: \"%s\"\n", text);
 
 	/* Remove key text */
 	token = strtok(NULL, "$$");
 	
 	/* Save key text */
 	strcpy(key, token);
-	printf("key text in server: \"%s\"\n", key);
+//	printf("key text in server: \"%s\"\n", key);
 
 	/* Pass key and text to cipher function and return cipher */
 	memset(cipher, '\0', sizeof(cipher));
 
-	getCipherText(text, key, cipher);
+	encode(text, key, cipher);
 
-	printf("cipher text in server: \"%s\"\n", cipher);
+//	printf("cipher text in server: \"%s\"\n", cipher);
 
 	/* while (token != NULL) {
 		printf(" token: %s", token);
@@ -149,19 +149,19 @@ void childMethod(int connectionFD) {
 	}*/
 	
 
-	printf("SERVER: temp is: \"%s\"\n", temp);
+//	printf("SERVER: temp is: \"%s\"\n", temp);
 
 
 	// Send a Success message back to the client
-	charsRead = send(connectionFD, "I am the server, and I got your message", 39, 0); // Send success back
+	charsRead = send(connectionFD, cipher, strlen(cipher), 0); // Send success back
 	if (charsRead < 0) error("ERROR writing to socket\n");
 
 	}
 
-	printf("Closing fd\n");
+//	printf("Closing fd\n");
 	close(connectionFD); 
 
-	printf("Exiting child process\n");
+//	printf("Exiting child process\n");
 	exit(0);
 	}
 }
