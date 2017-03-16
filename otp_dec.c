@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
 	int socketFD, portNumber, charsWritten, charsRead;
 	struct sockaddr_in serverAddress;
 	struct hostent* serverHostInfo;
-	char buffer[100000];
+	char buffer[150000];
  	int returnVal;
 
 	/* Check usage and args */   

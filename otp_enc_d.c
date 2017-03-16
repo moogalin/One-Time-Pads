@@ -62,8 +62,8 @@ void encode(char * text, char * key, char * cipher) {
 
 void childMethod(int connectionFD) {
 	int charsRead;
-	char completeMessage[100000], readBuffer[1000];
-	char temp[100000];
+	char completeMessage[150000], readBuffer[1000];
+	char temp[150000];
 	char text[100000];
 	char key[100000];
 	char cipher[100000];
@@ -90,8 +90,8 @@ void childMethod(int connectionFD) {
 		charsRead = recv(connectionFD, readBuffer, sizeof(readBuffer) - 1, 0);
 		strcat(completeMessage, readBuffer);
 //		printf("PARENT: Message received: \"%s\"\n", readBuffer);
-	//	if (charsRead == -1) { printf("r == -1\n"); break;}
-	//	if (charsRead == 0) { printf("r == 0\n"); break; }
+		if (charsRead == -1) { printf("r == -1\n"); break;}
+		if (charsRead == 0) { printf("r == 0\n"); break; }
 	}
 
 //	printf("out of while loop\n");
@@ -101,16 +101,20 @@ void childMethod(int connectionFD) {
 //	printf("SERVER: I received this from the client: \"%s\"\n", completeMessage);
 
 	/* Verify that client is otp_enc */
-	if (strncmp(completeMessage, type, strlen(temp)) != 0) {
+
+//	printf("msg[0]:%c msg[1]:%c msg[2]:%c type:%s strlen(temp):%d\n", completeMessage[0], completeMessage[1], completeMessage[2], type, strlen(temp));
+
+	if (strncmp(completeMessage, type, 3) != 0) {
 		fprintf(stderr,"ERROR: Client type must be encoder\n");
 		
-		charsRead = send(connectionFD, "Error: Client type must be encoder",34,0 );
+		charsRead = send(connectionFD, " ",1,0 );
 		
 		if (charsRead < 0) error("ERROR writing to socket\n");
 
 	}	
 
 	else {
+//	printf("Client type is encoder\n");
 
 	memset(temp, '\0', sizeof(temp));
 	strcpy(temp, completeMessage);

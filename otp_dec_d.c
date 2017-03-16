@@ -62,8 +62,8 @@ void decode(char * cipher, char * key, char * text) {
 
 void childMethod(int connectionFD) {
 	int charsRead;
-	char completeMessage[100000], readBuffer[1000];
-	char temp[100000];
+	char completeMessage[150000], readBuffer[1000];
+	char temp[150000];
 	char text[100000];
 	char key[100000];
 	char cipher[100000];
@@ -101,7 +101,7 @@ void childMethod(int connectionFD) {
 //	printf("SERVER: I received this from the client: \"%s\"\n", completeMessage);
 
 	/* Verify that client is otp_dec */
-	if (strncmp(completeMessage, type, strlen(temp)) != 0) {
+	if (strncmp(completeMessage, type, 3) != 0) {
 		fprintf(stderr,"ERROR: Client type must be decoder\n");
 		
 		charsRead = send(connectionFD, "Error: Client type must be decoder",34,0 );
