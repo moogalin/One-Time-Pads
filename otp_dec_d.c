@@ -9,57 +9,43 @@
 #include <sys/wait.h>
 #include <errno.h>
 
+/* Source citation: 
+ * 	Error handling and socket code based on Client.c and Server.c code 
+ * 	provided in CS344 lecture slides (Module 4 by Benjamin Brewster
+ */ 
 
 void error(const char *msg) { perror(msg); exit(1); } // Error function used for reporting issues
 
+/* Function thhat receives a cipher and key to decode and save as 'text' string */
 void decode(char * cipher, char * key, char * text) {
 	int i;
-	//char cipher[strlen(text)];
 	int textChar, keyChar, cipherChar;
 
-	//memset(cipher,'\0', sizeof(cipher)); 
-
-//	printf("size of cipher: %d\n", strlen(cipher));
-
-	/* Iterate through cipher */
+	/* Iterate through cipher string */
 	for (i=0; i < strlen(cipher); i++) {
 
-		/* First, convert ascii A-Z and space to 0 through 27 */
-		if (cipher[i] == ' ') {
-			cipherChar = 0;
-		}
-		else {
-			cipherChar = cipher[i] - 64;
-		}
+		/* First, convert ascii A-Z and space to 0 through 27 for modular subtraction */
+		if (cipher[i] == ' ') { cipherChar = 0; } // Space is not related to its ascii value
+		else { cipherChar = cipher[i] - 64; } 
 	
-		if (key[i] == ' ') {
-			keyChar = 0;
-		}
-		else {
-			keyChar = key[i] - 64;
-		}
+		if (key[i] == ' ') { keyChar = 0; } // Space is not related to its ascii value
+		else { keyChar = key[i] - 64;	}
 
-		/* Subtraction: textChar + keyChar */
-		textChar = cipherChar - keyChar;
+		/* Subtraction: cipherChar - keyChar */
+		textChar = cipherChar - keyChar; //Subtracting key from cipher gets non-ascii text value
 
-		/* Ensure new cipher Char is between 0 and 27 */
+		/* Ensure new cipher Char is between 0 and 27 (ie. not negative) */
 		if (textChar < 0) { textChar += 27; }
 
-		
-//		printf("textChar: %d keyChar: %d newChar: %d\n", textChar, keyChar, cipherChar);
-
 		/* Undo conversion of ascii */
-		if (textChar == 0) {
-			text[i] = ' ';
-		}
-		else {
-			text[i] = textChar + 64;
-		}		
+		if ( textChar == 0) { text[i] = ' '; } // Space is not related to its ascii value
+		else { text[i] = textChar + 64;	}		
 	}
-
-	//return cipher;
+	
+	/* text string now contains decoded message */
 }
 
+/* Function that creates a child process for the decryption work */
 void childMethod(int connectionFD) {
 	int charsRead;
 	char completeMessage[150000], readBuffer[1000];
@@ -67,101 +53,89 @@ void childMethod(int connectionFD) {
 	char text[100000];
 	char key[100000];
 	char cipher[100000];
-	char * type = "dec";
+	const char * type = "dec";
 	char * token;
 	pid_t spawnPid = -5;
 
 	spawnPid = fork();
 
-	if (spawnPid == -1) {
-		perror("Hull breach!");
-	}
+	/* Error creating child process */
+	if (spawnPid == -1) { perror("Hull breach!"); }
 
 	/* inside child process */
 	else if (spawnPid == 0) {
 
-	/* Get the message from the client and display it */
-	memset(completeMessage, '\0', sizeof(completeMessage));
+		/* Clear out message buffer */
+		memset(completeMessage, '\0', sizeof(completeMessage));
 
-	/* Keep reading until all data is received */
-	while (strstr(completeMessage, "##") == NULL) {
-//		printf("still null\n");
-		memset(readBuffer, '\0', sizeof(readBuffer)); // Clear read buffer
-		charsRead = recv(connectionFD, readBuffer, sizeof(readBuffer) - 1, 0);
-		strcat(completeMessage, readBuffer);
-//		printf("PARENT: Message received: \"%s\"\n", readBuffer);
-	//	if (charsRead == -1) { printf("r == -1\n"); break;}
-	//	if (charsRead == 0) { printf("r == 0\n"); break; }
+		/* Keep reading until all data is received */
+		while (strstr(completeMessage, "##") == NULL) {
+			memset(readBuffer, '\0', sizeof(readBuffer)); // Clear read buffer
+			
+			/* Read from socket up to the size of the readBuffer -1 to preserve '\0' */
+			charsRead = recv(connectionFD, readBuffer, sizeof(readBuffer) - 1, 0);
+			
+			/* Add current buffer to complete message string */
+			strcat(completeMessage, readBuffer);
+			
+			/* Escape while-loop if error reading from socket */
+			if (charsRead == -1) { printf("r == -1\n"); break;}
+			if (charsRead == 0) { printf("r == 0\n"); break; }
 	}
-
-//	printf("out of while loop\n");
-
+	
+	/* Remove terminal flag from message received by server (ie. remove '##') */
 	int terminalLoc = strstr(completeMessage, "##") - completeMessage;
 	completeMessage[terminalLoc] = '\0';
-//	printf("SERVER: I received this from the client: \"%s\"\n", completeMessage);
 
-	/* Verify that client is otp_dec */
+	/* Verify that client is otp_dec before decoding message */
+		
+	/* First three letters of message are not "dec", therefore client is not decoder */
 	if (strncmp(completeMessage, type, 3) != 0) {
-		fprintf(stderr,"ERROR: Client type must be decoder\n");
-		
-		charsRead = send(connectionFD, "Error: Client type must be decoder",34,0 );
-		
-		if (charsRead < 0) error("ERROR writing to socket\n");
-
+		fprintf(stderr,"OTP_DEC_D: Error: Client type must be decoder\n");
+		/* Send blank message back to client, indicating failed encoding */
+		charsRead = send(connectionFD, " ",1,0 );	
+		if (charsRead < 0) error("OTP_DEC_D: Error writing to socket\n");
 	}	
 
+	/* Client is decoder */
 	else {
 
-	memset(temp, '\0', sizeof(temp));
-	strcpy(temp, completeMessage);
+		memset(temp, '\0', sizeof(temp));
+		strcpy(temp, completeMessage);
 
-	/* Clear contents of key and cipher strings */
-	memset(key, '\0', sizeof(key));
-	memset(cipher, '\0', sizeof(cipher));
+		/* Clear contents of key, cipher, and text strings */
+		memset(key, '\0', sizeof(key));
+		memset(cipher, '\0', sizeof(cipher));
+		memset(text, '\0', sizeof(text));
 
-	/* Remove "dec" text */
-	token = strtok(temp, "$$");
+		/* Remove "dec" text */
+		token = strtok(temp, "$$");
 
-	/* Remove cipher text */
-	token = strtok(NULL, "$$");
-
-	/* Save cipher text */
-	strcpy(cipher, token);
-//	printf("cipher in server: \"%s\"\n", cipher);
-
-	/* Remove key text */
-	token = strtok(NULL, "$$");
-	
-	/* Save key text */
-	strcpy(key, token);
-//	printf("key text in server: \"%s\"\n", key);
-
-	/* Pass key and cipher to text function and return decoded message */
-	memset(text, '\0', sizeof(text));
-
-	decode(cipher, key, text);
-
-//	printf("decoded text in server: \"%s\"\n", text);
-
-	/* while (token != NULL) {
-		printf(" token: %s", token);
+		/* Remove cipher text */
 		token = strtok(NULL, "$$");
-	}*/
+
+		/* Save cipher text */
+		strcpy(cipher, token);
+		
+		/* Remove key text */
+		token = strtok(NULL, "$$");
 	
+		/* Save key text */
+		strcpy(key, token);
 
-//	printf("SERVER: temp is: \"%s\"\n", temp);
+		/* Pass key and cipher to text function and receive decoded message saved in text string */
+		decode(cipher, key, text);
 
-
-	// Send a Success message back to the client
-	charsRead = send(connectionFD, text, strlen(text), 0); // Send success back
-	if (charsRead < 0) error("ERROR writing to socket\n");
-
+		/* Send a Success message back to the client */
+		charsRead = send(connectionFD, text, strlen(text), 0); // Send decoded text back
+		if (charsRead < 0) error("ERROR writing to socket\n");
+		
 	}
 
-//	printf("Closing fd\n");
+	/* Close connection */
 	close(connectionFD); 
 
-//	printf("Exiting child process\n");
+	/* Exit child process on success */
 	exit(0);
 	}
 }
@@ -170,7 +144,6 @@ int main(int argc, char *argv[])
 {
 	int listenSocketFD, establishedConnectionFD, portNumber; //, charsRead;
 	socklen_t sizeOfClientInfo;
-//	char buffer[256];
 	struct sockaddr_in serverAddress, clientAddress;
 
 	/* Verify usage is correct */
@@ -190,7 +163,7 @@ int main(int argc, char *argv[])
 	// Enable the socket to begin listening
 	if (bind(listenSocketFD, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0) // Connect socket to port
 		error("ERROR on binding");
-	listen(listenSocketFD, 5); // Flip the socket on - it can now receive up to 5 connections
+	listen(listenSocketFD, 5); // Socket can now receive up to 5 connections
 
 
 	/* Create signal handler to reap zombies asynchronously */
@@ -205,15 +178,15 @@ int main(int argc, char *argv[])
 
 	/* Enter loop to accept connections and create child processes */
 	while(1) {
-	// Accept a connection, blocking if one is not available until one connects
-	sizeOfClientInfo = sizeof(clientAddress); // Get the size of the address for the client that will connect
-	establishedConnectionFD = accept(listenSocketFD, (struct sockaddr *)&clientAddress, &sizeOfClientInfo); // Accept
-	if (establishedConnectionFD < 0) error("ERROR on accept");
+		/* Accept a connection, blocking if one is not available until one connects */
+		sizeOfClientInfo = sizeof(clientAddress); // Get the size of the address for the client that will connect
+		establishedConnectionFD = accept(listenSocketFD, (struct sockaddr *)&clientAddress, &sizeOfClientInfo); // Accept
+		if (establishedConnectionFD < 0) error("ERROR on accept");
 
-	/* Receive message and encrypt in a child process */
-	childMethod(establishedConnectionFD);
+		/* Receive message and encrypt in a child process */
+		childMethod(establishedConnectionFD);
 
-}
+	}
 	close(listenSocketFD); // Close the listening socket
 	return 0; 
 }
